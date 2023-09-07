@@ -16,7 +16,7 @@ class SammedPredictor:
         self.reset_image()
         
 
-    def set_image(self,image: np.ndarray, image_format: str = "RGB") -> None:
+    def set_image(self,image: np.ndarray, mask: np.ndarray = None, image_format: str = "RGB") -> None:
         assert image_format in ["RGB","BGR",], f"image_format must be in ['RGB', 'BGR'], is {image_format}."
         if image_format != self.model.image_format:
             image = image[..., ::-1]
@@ -35,7 +35,7 @@ class SammedPredictor:
         transforms = self.transforms(self.new_size)
         augments = transforms(image=input_image)
         input_image = augments['image'][None, :, :, :]
-    
+        
         assert (
             len(input_image.shape) == 4
             and input_image.shape[1] == 3
@@ -44,7 +44,10 @@ class SammedPredictor:
 
         self.features = self.model.image_encoder(input_image.to(self.device))
         self.is_image_set = True
-
+        if mask:
+            input_mask = transforms(image=mask)
+            input_mask_torch = input_mask['image'][None, :, :, :].to(self.device)
+            return input_mask_torch
     def predict(
         self,
         point_coords: Optional[np.ndarray] = None,
